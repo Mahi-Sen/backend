@@ -1,44 +1,36 @@
-import uvicorn
+# main.py (CORRECTED VERSION)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from api import admin, analysis
 
 app = FastAPI(
-    title="Buckminster Fullerene Backend",
+    title="A.S.T.R.A. Backend",
     description="The central server for managing users and analyzing screen captures.",
     version="1.0.0"
 )
 
-ASTRA_CONSOLE_URL = "https://your-astra-console-url.vercel.app" 
+# !! DEFINE YOUR ACTUAL URLs HERE !!
+ASTRA_CONSOLE_URL = "https://astra-console-mahi.vercel.app" # <--- APNA FRONTEND URL DAALO
+BACKEND_URL = "https://backend-theta-self-37.vercel.app" # <--- APNA BACKEND URL DAALO
 
 app.add_middleware(
     CORSMiddleware,
-    # This is the most important change. We are being specific.
     allow_origins=[
-        "http://localhost:3000", # If you run ASTRA locally for testing
-        "http://127.0.0.1:3000", # Another local variant
-        ASTRA_CONSOLE_URL 
+        ASTRA_CONSOLE_URL, 
+        # BACKEND_URL, # Backend URL daalne ki zaroorat nahi hoti usually
+        "http://localhost:3000", # Local testing ke liye rakh sakte ho
+        "http://127.0.0.1:3000",
     ],
     allow_credentials=True,
-    allow_methods=["*"], # Allows GET, POST, PUT, DELETE, etc.
-    allow_headers=["*"], # Allows headers like X-Admin-API-Key
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-app.include_router(analysis.router) # No need for tags here, they can be in the router files
+app.include_router(analysis.router)
 app.include_router(admin.router)
-
-# @app.get("/", tags=["Root"])
-# async def read_root():
-#     return {"message": "A.S.T.R.A. Console Backend is online and operational."}
 
 @app.get("/", tags=["Root"])
 async def read_root():
-    """A simple endpoint to check if the server is running."""
     return {"message": "A.S.T.R.A. Console Backend is online and operational."}
 
-
-if __name__ == "__main__":
-
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
-
+# if __name__ == "__main__" block Vercel use nahi karta, so usko chhod do.

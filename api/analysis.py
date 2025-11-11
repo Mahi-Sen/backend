@@ -1,27 +1,41 @@
+
 from fastapi import APIRouter, Body, HTTPException, status, Request, Depends
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, time
 import secrets
 import json
+import pytz
 
-from .dependencies import check_api_status
 from core.database import user_collection
+from core.config_manager import get_system_config
 from services.llm_service import get_image_description_from_ixl, get_final_answer_from_txl
 from models.user import LLMConfig
 
 router = APIRouter()
 
-class AnalysisRequest(BaseModel):
-    access_key: str
-    device_key: str
-    image_data: str
+async def check_api_status():
+    config = await get_system_config()
+    if not config.api_enabled:
+        raise HTTPException(status_code=503, detail=config.maintenance_message)
+    if config.daily_lockdown_start_utc and config.daily_lockdown_end_utc:
+        try:
+            now_utc_time = datetime.now(pytz.utc).time()
+            start_time = time.fromisoformat(config.daily_lockdown_start_utc)
+            end_time = time.fromisoformat(config.daily_lockdown_end_utc)
+            is_locked = False
+            if start_time <= end_time:
+                if start_time <= now_utc_time <= end_time: is_locked = True
+            else: 
+                if now_utc_time >= start_time or now_utc_time <= end_time: is_locked = True
+            if is_locked:
+                raise HTTPException(status_code=503, detail=config.maintenance_message)
+        except (ValueError, TypeError):
+            print("Warning: Invalid daily lockdown time format in database.")
+    return True
 
-class SecureRequest(BaseModel):
-    access_key: str
-    device_key: str
-
-class ActivationRequest(BaseModel):
-    access_key: str
+class AnalysisRequest(BaseModel): access_key: str; device_key: str; image_data: str
+class SecureRequest(BaseModel): access_key: str; device_key: str
+class ActivationRequest(BaseModel): access_key: str
 
 @router.post("/auth/activate")
 async def activate_device(payload: ActivationRequest):
@@ -102,4 +116,5 @@ async def check_client_status(request: SecureRequest):
         return {"action": "uninstall"}
     if not user.get("is_active"):
         return {"action": "block"}
+
     return {"action": "ok"}

@@ -10,12 +10,19 @@ app = FastAPI(
     version="1.0.0"
 )
 
+ASTRA_CONSOLE_URL = "https://your-astra-console-url.vercel.app" 
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    # This is the most important change. We are being specific.
+    allow_origins=[
+        "http://localhost:3000", # If you run ASTRA locally for testing
+        "http://127.0.0.1:3000", # Another local variant
+        ASTRA_CONSOLE_URL 
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"], # Allows GET, POST, PUT, DELETE, etc.
+    allow_headers=["*"], # Allows headers like X-Admin-API-Key
 )
 
 app.include_router(analysis.router) # No need for tags here, they can be in the router files
@@ -34,3 +41,4 @@ async def read_root():
 if __name__ == "__main__":
 
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+

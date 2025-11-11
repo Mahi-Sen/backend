@@ -18,9 +18,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(analysis.router, tags=["Client"])
-app.include_router(admin.router, tags=["Admin"])
+app.include_router(analysis.router) # No need for tags here, they can be in the router files
+app.include_router(admin.router)
 
+# @app.get("/", tags=["Root"])
+# async def read_root():
+#     return {"message": "A.S.T.R.A. Console Backend is online and operational."}
 
 @app.get("/", tags=["Root"])
 async def read_root():
@@ -29,4 +32,5 @@ async def read_root():
 
 
 if __name__ == "__main__":
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
